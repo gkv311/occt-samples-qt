@@ -1,0 +1,14 @@
+# This workflow will run other workflows
+name: Build (All)
+
+on: [push]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-qt5:
+    uses: ./.github/workflows/build_linux_gcc_qt5.yml
+  linux-qt6:
+    uses: ./.github/workflows/build_linux_gcc_qt6.yml

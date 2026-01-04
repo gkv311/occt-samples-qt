@@ -1,17 +1,13 @@
 name: Build (Linux/GCC/Qt5)
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
-  Ubuntu:
+  linux-gcc-qt5:
     runs-on: ubuntu-24.04
     steps:
     - name: Clone Tree
-      uses: actions/checkout@v1
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
     - name: Install Dependencies
