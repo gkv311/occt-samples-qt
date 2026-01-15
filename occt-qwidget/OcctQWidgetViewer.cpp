@@ -39,8 +39,11 @@ typedef Aspect_DisplayConnection Xw_DisplayConnection;
 OcctQWidgetViewer::OcctQWidgetViewer(QWidget* theParent)
     : QWidget(theParent)
 {
-  Handle(Aspect_DisplayConnection) aDisp   = new Xw_DisplayConnection();
-  Handle(OpenGl_GraphicDriver)     aDriver = new OpenGl_GraphicDriver(aDisp, false);
+  Handle(Aspect_DisplayConnection) aDisp;
+#if !defined(__APPLE__) && !defined(_WIN32)
+  aDisp = new Xw_DisplayConnection();
+#endif
+  Handle(OpenGl_GraphicDriver) aDriver = new OpenGl_GraphicDriver(aDisp, false);
 
   // create viewer
   myViewer = new V3d_Viewer(aDriver);

@@ -41,8 +41,11 @@ typedef Aspect_DisplayConnection Xw_DisplayConnection;
 OcctQQuickFramebufferViewer::OcctQQuickFramebufferViewer(QQuickItem* theParent)
     : QQuickFramebufferObject(theParent)
 {
-  Handle(Aspect_DisplayConnection) aDisp   = new Xw_DisplayConnection();
-  Handle(OpenGl_GraphicDriver)     aDriver = new OpenGl_GraphicDriver(aDisp, false);
+  Handle(Aspect_DisplayConnection) aDisp;
+#if !defined(__APPLE__) && !defined(_WIN32)
+  aDisp = new Xw_DisplayConnection();
+#endif
+  Handle(OpenGl_GraphicDriver) aDriver = new OpenGl_GraphicDriver(aDisp, false);
   // lets QtQuick to manage buffer swap
   aDriver->ChangeOptions().buffersNoSwap = true;
   // don't write into alpha channel
