@@ -3,6 +3,7 @@
 #ifndef _OcctQtTools_HeaderFile
 #define _OcctQtTools_HeaderFile
 
+#include <Aspect_Drawable.hxx>
 #include <Aspect_WindowInputListener.hxx>
 #include <Message_Gravity.hxx>
 #include <Quantity_ColorRGBA.hxx>
@@ -90,6 +91,15 @@ public: //! @name methods for wrapping Qt input events into Aspect_WindowInputLi
   static bool qtHandleTouchEvent(Aspect_WindowInputListener& theListener,
                                  const Handle(V3d_View)& theView,
                                  const QTouchEvent* theEvent);
+
+  //! Register raw input events (like WM_INPUT from 3d mouse).
+  static bool qtRegisterRawInput(Aspect_Drawable theWinId);
+
+  //! Queue Qt native event (like WM_INPUT from 3d mouse) to OCCT listener.
+  static bool qtHandleNativeEvent(Aspect_WindowInputListener& theListener,
+                                  const Handle(V3d_View)& theView,
+                                  const QByteArray& theEventType,
+                                  void* theMsg);
 
   //! Map Qt buttons bitmask to virtual keys.
   static Aspect_VKeyMouse qtMouseButtons2VKeys(Qt::MouseButtons theButtons);

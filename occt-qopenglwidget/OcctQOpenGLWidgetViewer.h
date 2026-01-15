@@ -4,6 +4,7 @@
 #define _OcctQOpenGLWidgetViewer_HeaderFile
 
 #include <Standard_WarningsDisable.hxx>
+#include <QAbstractNativeEventFilter>
 #include <QOpenGLWidget>
 #include <Standard_WarningsRestore.hxx>
 
@@ -22,7 +23,7 @@ class AIS_ViewCube;
 //! Inheritance from AIS_ViewController is used to translate
 //! user input events (mouse, keyboard, window resize, etc.)
 //! to 3D Viewer (panning, rotation, zooming, etc.).
-class OcctQOpenGLWidgetViewer : public QOpenGLWidget, public AIS_ViewController
+class OcctQOpenGLWidgetViewer : public QOpenGLWidget, public QAbstractNativeEventFilter, public AIS_ViewController
 {
   Q_OBJECT
 public:
@@ -70,6 +71,13 @@ protected: // user input events
   virtual void mouseReleaseEvent(QMouseEvent* theEvent) override;
   virtual void mouseMoveEvent(QMouseEvent* theEvent) override;
   virtual void wheelEvent(QWheelEvent* theEvent) override;
+
+  //! Handle native events (QAbstractNativeEventFilter interface).
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  virtual bool nativeEventFilter(const QByteArray& theEventType, void* theMsg, qintptr* theRes) override;
+#else
+  virtual bool nativeEventFilter(const QByteArray& theEventType, void* theMsg, long* theRes) override;
+#endif
 
 private:
   //! Dump OpenGL info.

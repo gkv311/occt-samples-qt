@@ -1,13 +1,20 @@
 // Copyright (c) 2025 Kirill Gavrilov
 
+#ifdef _WIN32
+  // should be included before other headers to avoid missing definitions
+  #include <windows.h>
+#endif
+
 #include "OcctQtTools.h"
 
 #include <Aspect_ScrollDelta.hxx>
 #include <Message.hxx>
+#include <NCollection_LocalArray.hxx>
 #include <OpenGl_Caps.hxx>
 #include <OSD_Environment.hxx>
 #include <Standard_Version.hxx>
 #include <V3d_View.hxx>
+#include <WNT_HIDSpaceMouse.hxx>
 
 #include <Standard_WarningsDisable.hxx>
 #include <QCoreApplication>
@@ -364,6 +371,76 @@ bool OcctQtTools::qtHandleTouchEvent(Aspect_WindowInputListener& theListener,
   }
 #endif
   return hasUpdates;
+}
+
+// ================================================================
+// Function : qtRegisterRawInput
+// ================================================================
+bool OcctQtTools::qtRegisterRawInput(Aspect_Drawable theWinId)
+{
+#ifdef _WIN32
+  // handle raw WM_INPUT events to catch input from  WNT_HIDSpaceMouse (HID_USAGE_GENERIC_MULTI_AXIS_CONTROLLER);
+  // the same could be done also done for tracking precise mouse input (HID_USAGE_GENERIC_MOUSE RIM_TYPEMOUSE)
+  RAWINPUTDEVICE aRawSpace = {};
+  aRawSpace.usUsagePage = 0x01; // HID_USAGE_PAGE_GENERIC from hidusage.h
+  aRawSpace.usUsage     = 0x08; // HID_USAGE_GENERIC_MULTI_AXIS_CONTROLLER
+  aRawSpace.dwFlags     = 0; // RIDEV_DEVNOTIFY
+  aRawSpace.hwndTarget  = (HWND )theWinId;
+  if (!RegisterRawInputDevices(&aRawSpace, 1, sizeof(aRawSpace)))
+  {
+    Message::SendTrace() << "Warning: RegisterRawInputDevices() failed to register RAW multi-axis controller input";
+    return false;
+  }
+  return true;
+#else
+  (void)theWinId;
+  return false;
+#endif
+}
+
+// ================================================================
+// Function : qtHandleNativeEvent
+// ================================================================
+bool OcctQtTools::qtHandleNativeEvent(Aspect_WindowInputListener& theListener,
+                                      const Handle(V3d_View)& theView,
+                                      const QByteArray& theEventType,
+                                      void* theMsg)
+{
+  (void)theEventType, (void)theMsg, (void)theView, (void)theListener;
+#ifdef _WIN32
+  if (theEventType == "windows_generic_MSG")
+  {
+    MSG* aMsg = reinterpret_cast<MSG*>(theMsg);
+    if (aMsg->message != WM_INPUT)
+      return false;
+
+    UINT aSize = 0;
+    ::GetRawInputData((HRAWINPUT )aMsg->lParam, RID_INPUT, nullptr, &aSize, sizeof(RAWINPUTHEADER));
+    NCollection_LocalArray<BYTE> aRawData(aSize);
+    if (aSize == 0 || ::GetRawInputData((HRAWINPUT )aMsg->lParam, RID_INPUT, aRawData, &aSize, sizeof(RAWINPUTHEADER)) != aSize)
+      return false;
+
+    const RAWINPUT* aRawInput = (RAWINPUT* )(BYTE* )aRawData;
+    if (aRawInput->header.dwType != RIM_TYPEHID)
+      return false;
+
+    RID_DEVICE_INFO aDevInfo;
+    aDevInfo.cbSize = sizeof(RID_DEVICE_INFO);
+    UINT aDevInfoSize = sizeof(RID_DEVICE_INFO);
+    if (::GetRawInputDeviceInfoW (aRawInput->header.hDevice, RIDI_DEVICEINFO, &aDevInfo, &aDevInfoSize) != sizeof(RID_DEVICE_INFO)
+     || (aDevInfo.hid.dwVendorId != WNT_HIDSpaceMouse::VENDOR_ID_LOGITECH
+      && aDevInfo.hid.dwVendorId != WNT_HIDSpaceMouse::VENDOR_ID_3DCONNEXION))
+      return false;
+
+    // see also 3d mouse input settings in AIS_ViewController to tune behavior
+    WNT_HIDSpaceMouse aSpaceData(aDevInfo.hid.dwProductId, aRawInput->data.hid.bRawData, aRawInput->data.hid.dwSizeHid);
+    if (theListener.Update3dMouse(aSpaceData))
+      return true;
+
+    return false;
+  }
+#endif
+  return false;
 }
 
 // ================================================================

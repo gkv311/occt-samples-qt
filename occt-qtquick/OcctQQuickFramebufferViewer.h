@@ -6,6 +6,7 @@
 #include "../occt-qt-tools/OcctQtTools.h"
 
 #include <Standard_WarningsDisable.hxx>
+#include <QAbstractNativeEventFilter>
 #include <QQuickFramebufferObject>
 #include <Standard_WarningsRestore.hxx>
 
@@ -24,7 +25,7 @@ class AIS_ViewCube;
 //! Inheritance from AIS_ViewController is used to translate
 //! user input events (mouse, keyboard, window resize, etc.)
 //! to 3D Viewer (panning, rotation, zooming, etc.).
-class OcctQQuickFramebufferViewer : public QQuickFramebufferObject, public AIS_ViewController
+class OcctQQuickFramebufferViewer : public QQuickFramebufferObject, public QAbstractNativeEventFilter, public AIS_ViewController
 {
   Q_OBJECT
 
@@ -99,6 +100,17 @@ protected: // user input events
   virtual void hoverMoveEvent(QHoverEvent* theEvent) override;
   virtual void hoverLeaveEvent(QHoverEvent* theEvent) override;
   //virtual void touchEvent(QTouchEvent* theEvent) override;
+
+  //! Handle native events (QAbstractNativeEventFilter interface).
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  virtual bool nativeEventFilter(const QByteArray& theEventType, void* theMsg, qintptr* theRes) override;
+#else
+  virtual bool nativeEventFilter(const QByteArray& theEventType, void* theMsg, long* theRes) override;
+#endif
+
+private slots:
+  //! Handle window change event.
+  void onWindowChanged(QQuickWindow* theWin);
 
 private:
   //! Dump OpenGL info.

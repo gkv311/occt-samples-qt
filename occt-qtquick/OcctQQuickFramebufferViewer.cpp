@@ -23,7 +23,9 @@
 #include <Aspect_DisplayConnection.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <Message.hxx>
+#include <NCollection_LocalArray.hxx>
 #include <OpenGl_GraphicDriver.hxx>
+#include <WNT_HIDSpaceMouse.hxx>
 
 #if !defined(__APPLE__) && !defined(_WIN32) && defined(__has_include)
   #if __has_include(<Xw_DisplayConnection.hxx>)
@@ -86,6 +88,9 @@ OcctQQuickFramebufferViewer::OcctQQuickFramebufferViewer(QQuickItem* theParent)
   setAcceptHoverEvents(true);
   setMirrorVertically(true);
 
+  // signals and slots
+  connect(this, SIGNAL(windowChanged(QQuickWindow*)), this, SLOT(onWindowChanged(QQuickWindow*)));
+
   // GUI elements cannot be created from GL rendering thread - make queued connection
   connect(this, &OcctQQuickFramebufferViewer::glCriticalError, this, [this](QString theMsg)
   {
@@ -113,6 +118,37 @@ OcctQQuickFramebufferViewer::~OcctQQuickFramebufferViewer()
   // make active OpenGL context created by Qt
   //makeCurrent();
   aDisp.Nullify();
+}
+
+// ================================================================
+// Function : onWindowChanged
+// ================================================================
+void OcctQQuickFramebufferViewer::onWindowChanged(QQuickWindow* theWin)
+{
+  if (theWin == nullptr)
+    return;
+
+  // handle raw WM_INPUT events to catch input from  WNT_HIDSpaceMouse (HID_USAGE_GENERIC_MULTI_AXIS_CONTROLLER);
+  // the same could be done also done for tracking precise mouse input (HID_USAGE_GENERIC_MOUSE RIM_TYPEMOUSE)
+  if (OcctQtTools::qtRegisterRawInput((Aspect_Drawable)theWin->winId()))
+    QCoreApplication::instance()->installNativeEventFilter(this);
+}
+
+// ================================================================
+// Function : nativeEventFilter
+// ================================================================
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool OcctQQuickFramebufferViewer::nativeEventFilter(const QByteArray& theEventType, void* theMsg, qintptr* )
+#else
+bool OcctQQuickFramebufferViewer::nativeEventFilter(const QByteArray& theEventType, void* theMsg, long* )
+#endif
+{
+  if (OcctQtTools::qtHandleNativeEvent(*this, myView, theEventType, theMsg))
+  {
+    updateView();
+    return true;
+  }
+  return false;
 }
 
 // ================================================================

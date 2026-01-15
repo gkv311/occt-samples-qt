@@ -103,6 +103,23 @@ OcctQWidgetViewer::~OcctQWidgetViewer()
 }
 
 // ================================================================
+// Function : nativeEventFilter
+// ================================================================
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool OcctQWidgetViewer::nativeEventFilter(const QByteArray& theEventType, void* theMsg, qintptr* )
+#else
+bool OcctQWidgetViewer::nativeEventFilter(const QByteArray& theEventType, void* theMsg, long* )
+#endif
+{
+  if (OcctQtTools::qtHandleNativeEvent(*this, myView, theEventType, theMsg))
+  {
+    updateView();
+    return true;
+  }
+  return false;
+}
+
+// ================================================================
 // Function : event
 // ================================================================
 bool OcctQWidgetViewer::event(QEvent* theEvent)
@@ -342,6 +359,12 @@ void OcctQWidgetViewer::initializeGL()
 
   if (isFirstInit)
   {
+    // handle raw WM_INPUT events to catch input from  WNT_HIDSpaceMouse (HID_USAGE_GENERIC_MULTI_AXIS_CONTROLLER);
+    // the same could be done also done for tracking precise mouse input (HID_USAGE_GENERIC_MOUSE RIM_TYPEMOUSE)
+    if (OcctQtTools::qtRegisterRawInput(aNativeWin))
+      QCoreApplication::instance()->installNativeEventFilter(this);
+
+    // auxiliary objects
     myContext->Display(myViewCube, 0, 0, false);
 
     // dummy shape for testing
