@@ -131,6 +131,13 @@ void OcctQtTools::qtGlPlatformSetup()
   QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 #elif defined(__APPLE__)
   //
+#elif defined(HAVE_WAYLAND)
+  OSD_Environment aQpaPlat("QT_QPA_PLATFORM");
+  if (aQpaPlat.Value().IsEmpty())
+  {
+    aQpaPlat.SetValue("wayland");
+    aQpaPlat.Build();
+  }
 #else
   // Qt6 tries to use Wayland platform by default, which is incompatible with OCCT depending on Xlib;
   // Force 'xcb' platform plugin (alternatively, could be passed QApplication as '-platform xcb' argument).

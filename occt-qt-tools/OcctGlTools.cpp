@@ -12,6 +12,10 @@
 #include <OpenGl_View.hxx>
 #include <OpenGl_Window.hxx>
 
+#if defined(HAVE_WAYLAND) || defined(HAVE_GLES2)
+#include <EGL/egl.h>
+#endif
+
 // Exporting this symbol from .exe with value=1 will direct to NVIDIA GPU on Optimus systems
 //__declspec(dllexport) DWORD NvOptimusEnablement = 1;
 // Exporting this symbol from .exe with value=1 will direct to faster GPU on AMD PowerXpress systems
@@ -96,6 +100,25 @@ bool OcctGlTools::InitializeGlWindow(const Handle(V3d_View)& theView,
   {
     aWindow = new OcctNeutralWindow();
     aWindow->SetVirtual(true);
+
+  #if defined(HAVE_WAYLAND) || defined(HAVE_GLES2)
+    // wrap EGL surface
+    EGLContext anEglCtx     = eglGetCurrentContext();
+    EGLContext anEglDisplay = eglGetCurrentDisplay();
+    EGLContext anEglSurf    = eglGetCurrentSurface(EGL_DRAW);
+
+    EGLint anEglCfgId = 0, aNbConfigs = 0;
+    eglQuerySurface(anEglDisplay, anEglSurf, EGL_CONFIG_ID, &anEglCfgId);
+    const EGLint aConfigAttribs[] = { EGL_CONFIG_ID, anEglCfgId, EGL_NONE };
+    void* anEglCfg = nullptr;
+    eglChooseConfig(anEglDisplay, aConfigAttribs, &anEglCfg, 1, &aNbConfigs);
+
+    if (!aDriver->InitEglContext(anEglDisplay, anEglCtx, anEglCfg))
+    {
+      Message::SendFail() << "Error: OpenGl_GraphicDriver cannot initialize EGL context";
+      return false;
+    }
+  #endif
   }
   aWindow->SetNativeHandle(aNativeWin);
   aWindow->SetSize(theSize.x(), theSize.y());
@@ -118,19 +141,20 @@ bool OcctGlTools::InitializeGlWindow(const Handle(V3d_View)& theView,
 // ================================================================
 bool OcctGlTools::InitializeGlFbo(const Handle(V3d_View)& theView)
 {
-  Handle(OpenGl_Context)     aGlCtx = OcctGlTools::GetGlContext(theView);
-  Handle(OpenGl_FrameBuffer) aDefaultFbo = aGlCtx->DefaultFrameBuffer();
+  Handle(OpenGl_Context)    aGlCtx = OcctGlTools::GetGlContext(theView);
+  Handle(OcctQtFrameBuffer) aDefaultFbo = Handle(OcctQtFrameBuffer)::DownCast(aGlCtx->DefaultFrameBuffer());
   if (aDefaultFbo.IsNull())
-  {
     aDefaultFbo = new OcctQtFrameBuffer();
-    aGlCtx->SetDefaultFrameBuffer(aDefaultFbo);
-  }
+
   if (!aDefaultFbo->InitWrapper(aGlCtx))
   {
     aDefaultFbo.Nullify();
     Message::DefaultMessenger()->Send("Default FBO wrapper creation failed", Message_Fail);
     return false;
   }
+
+  // workaround some bugs (legacy code in OpenGl_Window::init() for surface-less EGL context)
+  aGlCtx->SetDefaultFrameBuffer(Handle(OpenGl_FrameBuffer)());
 
   Graphic3d_Vec2i aViewSizeOld;
   const Graphic3d_Vec2i aViewSizeNew = aDefaultFbo->GetVPSize();
@@ -150,6 +174,7 @@ bool OcctGlTools::InitializeGlFbo(const Handle(V3d_View)& theView)
     }
 #endif
   }
+  aGlCtx->SetDefaultFrameBuffer(aDefaultFbo);
   return true;
 }
 
@@ -173,11 +198,13 @@ void OcctGlTools::ResetGlStateBeforeOcct(const Handle(V3d_View)& theView)
   // Disable also texture bindings left by Qt.
   aGlCtx->core11fwd->glBindTexture(GL_TEXTURE_2D, 0);
   aGlCtx->core11fwd->glDisable(GL_BLEND);
+#ifndef HAVE_GLES2
   if (aGlCtx->core11ffp != nullptr)
   {
     aGlCtx->core11fwd->glDisable(GL_ALPHA_TEST);
     aGlCtx->core11fwd->glDisable(GL_TEXTURE_2D);
   }
+#endif
 }
 
 // ================================================================
