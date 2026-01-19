@@ -14,7 +14,21 @@
 
 int main(int theNbArgs, char** theArgVec)
 {
-  //Message::DefaultMessenger()->Printers().First()->SetTraceLevel(Message_Trace);
+  // handle application options
+  for (int anArgIter = 0; anArgIter < theNbArgs; ++anArgIter)
+  {
+    // enable verbose messages from OCCT algorithms
+    if (std::strcmp(theArgVec[anArgIter], "-v") == 0
+     || std::strcmp(theArgVec[anArgIter], "--verbose") == 0)
+    {
+      if (anArgIter + 1 < theNbArgs)
+        theArgVec[anArgIter] = theArgVec[anArgIter + 1];
+
+      --anArgIter;
+      --theNbArgs;
+      Message::DefaultMessenger()->Printers().First()->SetTraceLevel(Message_Trace);
+    }
+  }
 
   // before creating QApplication: define platform plugin to load (e.g. xcb on Linux)
   // and graphic driver (e.g. desktop OpenGL with desired profile/surface)
