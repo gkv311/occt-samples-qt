@@ -137,6 +137,7 @@ void OcctQtTools::qtGlPlatformSetup()
   {
     aQpaPlat.SetValue("wayland");
     aQpaPlat.Build();
+    Message::SendTrace() << "OcctQtTools: forced QT_QPA_PLATFORM=" << aQpaPlat.Value();
   }
 #else
   // Qt6 tries to use Wayland platform by default, which is incompatible with OCCT depending on Xlib;
@@ -146,6 +147,7 @@ void OcctQtTools::qtGlPlatformSetup()
   {
     aQpaPlat.SetValue("xcb");
     aQpaPlat.Build();
+    Message::SendTrace() << "OcctQtTools: forced QT_QPA_PLATFORM=" << aQpaPlat.Value();
   }
 #endif
 
