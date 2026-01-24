@@ -10,3 +10,5 @@ concurrency:
 jobs:
   linux:
     uses: ./.github/workflows/build_linux.yml
+  wnt:
+    uses: ./.github/workflows/build_wnt.yml

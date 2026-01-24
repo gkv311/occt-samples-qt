@@ -1,0 +1,98 @@
+name: Build (Windows/MinGW)
+on:
+  workflow_call:
+
+jobs:
+  build-wnt-mingw:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - name: Clone Tree
+      uses: actions/checkout@v6
+      with:
+        path: occt-samples-qt.git
+        fetch-depth: 1
+    - name: Clone OCCT
+      uses: actions/checkout@v6
+      with:
+        repository: gkv311/OCCT
+        path: occt.git
+        ref: 'v7_7_x'
+        fetch-depth: 1
+    - uses: msys2/setup-msys2@v2
+      id: msys2
+      with:
+        msystem: UCRT64
+        install: >
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+          mingw-w64-ucrt-x86_64-freetype
+          mingw-w64-ucrt-x86_64-qt5-base
+          mingw-w64-ucrt-x86_64-qt5-declarative
+          mingw-w64-ucrt-x86_64-qt5-quickcontrols
+          mingw-w64-ucrt-x86_64-qt5-quickcontrols2
+    - name: Configure occt
+      run: |
+        # disable most OCCT Modules and specify minimal set of toolkits to build
+        # (BUILD_ADDITIONAL_TOOLKITS) required by sample to speed up building
+        cmake -G Ninja -S $GITHUB_WORKSPACE/occt.git -B "$GITHUB_WORKSPACE/occt-make" \
+          -D CMAKE_BUILD_TYPE="Release" \
+          -D INSTALL_DIR:PATH=$GITHUB_WORKSPACE/occt \
+          -D BUILD_RELEASE_DISABLE_EXCEPTIONS:BOOL=OFF \
+          -D BUILD_DOC_Overview:BOOL=OFF \
+          -D BUILD_Inspector:BOOL=OFF \
+          -D BUILD_MODULE_Draw:BOOL=OFF \
+          -D BUILD_MODULE_DataExchange:BOOL=OFF \
+          -D BUILD_MODULE_ApplicationFramework:BOOL=OFF \
+          -D BUILD_MODULE_Visualization:BOOL=OFF \
+          -D BUILD_MODULE_ModelingAlgorithms:BOOL=OFF \
+          -D BUILD_MODULE_DETools:BOOL=OFF \
+          -D BUILD_ADDITIONAL_TOOLKITS:STRING="TKOpenGl TKV3d TKHLR TKMesh TKService TKShHealing TKPrim TKTopAlgo TKGeomAlgo TKBRep TKGeomBase TKG3d TKG2d TKMath TKernel" \
+          -D USE_FREETYPE:BOOL=ON \
+          -D USE_FREEIMAGE:BOOL=OFF
+    - name: Build occt
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-make" --config Release
+    - name: Install occt
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-make" --config Release --target install
+    - name: Configure project
+      run: |
+        cmake -G Ninja -S $GITHUB_WORKSPACE/occt-samples-qt.git -B "$GITHUB_WORKSPACE/occt-samples-qt-make" \
+          -D CMAKE_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN" \
+          -D CMAKE_BUILD_TYPE="Release" \
+          -D CMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/occt-samples-qt \
+          -D QT_VERSION=Qt5 \
+          -D OpenCASCADE_DIR=$GITHUB_WORKSPACE/occt/cmake
+    - name: Build project
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release
+    - name: Install project
+      env:
+        MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release --target install
+        inst_bin=`cygpath -m "$GITHUB_WORKSPACE/occt-samples-qt"`
+        occt_bin=`cygpath -m "$GITHUB_WORKSPACE/occt/win64/gcc/bin"`
+        msys_root=`cygpath -m "$MSYS2_LOCATION/ucrt64"`
+        ldd $inst_bin/occt-qopenglwidget-sample.exe
+        ldd $inst_bin/occt-qtquick-sample.exe
+        cp -f -r $occt_bin/*.dll $inst_bin/
+        # lookup for DLL dependencies
+        ldd $inst_bin/occt-qopenglwidget-sample.exe | grep /ucrt64/bin | awk '{print $3}' | xargs -i cp {} $inst_bin/
+        # copy extra Qt libraries (dependencies of plugins)
+        #cp -f -r $msys_root/bin/*.dll   $inst_bin/
+        cp -f -r $msys_root/bin/Qt5*.dll $inst_bin/
+        # copy Qt plugins / QML plugins
+        #cp -f -r $msys_root/share/qt5/plugins/*        $inst_bin/
+        cp -f -r $msys_root/share/qt5/plugins/platforms $inst_bin/platforms
+        cp -f -r $msys_root/share/qt5/qml/QtQuick       $inst_bin/QtQuick
+        cp -f -r $msys_root/share/qt5/qml/QtQuick.2     $inst_bin/QtQuick.2
+    - name: Upload build
+      uses: actions/upload-artifact@v4
+      with:
+        name: occt-qt5-mingw-ucrt64
+        path: ${{ github.workspace }}/occt-samples-qt
