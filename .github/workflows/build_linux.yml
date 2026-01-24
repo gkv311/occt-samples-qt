@@ -9,37 +9,45 @@ jobs:
     - name: Clone Tree
       uses: actions/checkout@v6
       with:
+        path: occt-samples-qt.git
         fetch-depth: 1
     - name: Install Dependencies
       run: |
+        # libfontconfig-dev/libtbb-dev are added as a workaround for broken CMake configuration files within libocct
         sudo apt-get update
         sudo apt-get install -y \
           g++ cmake ninja-build \
-          libocct-draw-dev libocct-visualization-dev libocct-ocaf-dev libocct-modeling-data-dev \
-          libocct-modeling-algorithms-dev libocct-foundation-dev libocct-data-exchange-dev \
+          libocct-visualization-dev libocct-modeling-data-dev \
+          libocct-modeling-algorithms-dev libocct-foundation-dev \
           libgl-dev libegl-dev \
-          tcllib tklib tcl-dev tk-dev \
-          libtbb-dev \
+          libfontconfig-dev libtbb-dev \
           qtbase5-dev qtdeclarative5-dev qtquickcontrols2-5-dev \
           qml-module-qtquick-controls2 qml-module-qtquick-templates2 qml-module-qtquick-dialogs \
           xvfb scrot
     - name: Configure project
       run: |
-        mkdir "build"
-        cmake -G Ninja -S . -B "./build" -D QT_VERSION=Qt5
+        cmake -S "$GITHUB_WORKSPACE/occt-samples-qt.git" -B "$GITHUB_WORKSPACE/occt-samples-qt-make" -G Ninja \
+              -D CMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/occt-samples-qt" \
+              -D QT_VERSION=Qt5
     - name: Build project
       run: |
-        cmake --build "./build" --config Release
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release
+    - name: Install project
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release --target install
     - name: Run tests
       run: |
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qwidget/occt-qwidget-sample             ./build/occt-qwidget.png       5
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qopenglwidget/occt-qopenglwidget-sample ./build/occt-qopenglwidget.png 5
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qtquick/occt-qtquick-sample             ./build/occt-qtquick.png       5
+        screenshot_sh=$GITHUB_WORKSPACE/occt-samples-qt.git/.github/workflows/screenshot.sh
+        pushd $GITHUB_WORKSPACE/occt-samples-qt
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qwidget-sample       ./occt-qwidget.png       5
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qopenglwidget-sample ./occt-qopenglwidget.png 5
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qtquick-sample       ./occt-qtquick.png       5
+        popd
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: occt-qt5
-        path: ./build/*.png
+        name: occt-qt5-linux
+        path: occt-samples-qt/*.png
 
   linux-gcc-qt6:
     runs-on: ubuntu-24.04
@@ -47,35 +55,43 @@ jobs:
     - name: Clone Tree
       uses: actions/checkout@v6
       with:
+        path: occt-samples-qt.git
         fetch-depth: 1
     - name: Install Dependencies
       run: |
+        # libfontconfig-dev/ libtbb-dev are added as a workaround for broken CMake configuration files within libocct
         sudo apt-get update
         sudo apt-get install -y \
           g++ cmake ninja-build \
-          libocct-draw-dev libocct-visualization-dev libocct-ocaf-dev libocct-modeling-data-dev \
-          libocct-modeling-algorithms-dev libocct-foundation-dev libocct-data-exchange-dev \
+          libocct-visualization-dev libocct-modeling-data-dev \
+          libocct-modeling-algorithms-dev libocct-foundation-dev \
           libgl-dev libegl-dev \
-          tcllib tklib tcl-dev tk-dev \
-          libtbb-dev \
+          libfontconfig-dev libtbb-dev \
           qt6-base-dev qt6-declarative-dev \
           qml6-module-qtquick-window qml6-module-qtquick-controls qml6-module-qtquick-templates qml6-module-qtquick-dialogs qml6-module-qtqml-workerscript \
           xvfb scrot
     - name: Configure project
       run: |
-        mkdir "build"
-        cmake -G Ninja -S . -B "./build" -D QT_VERSION=Qt6
+        cmake -S "$GITHUB_WORKSPACE/occt-samples-qt.git" -B "$GITHUB_WORKSPACE/occt-samples-qt-make" -G Ninja \
+              -D CMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/occt-samples-qt" \
+              -D QT_VERSION=Qt6
     - name: Build project
       run: |
-        cmake --build "./build" --config Release
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release
+    - name: Install project
+      run: |
+        cmake --build "$GITHUB_WORKSPACE/occt-samples-qt-make" --config Release --target install
     - name: Run tests
       run: |
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qwidget/occt-qwidget-sample             ./build/occt-qwidget.png       5
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qopenglwidget/occt-qopenglwidget-sample ./build/occt-qopenglwidget.png 5
-        xvfb-run --server-args="-screen 0 800x600x24" ./.github/workflows/screenshot.sh ./build/occt-qtquick/occt-qtquick-sample             ./build/occt-qtquick.png       5
+        screenshot_sh=$GITHUB_WORKSPACE/occt-samples-qt.git/.github/workflows/screenshot.sh
+        pushd $GITHUB_WORKSPACE/occt-samples-qt
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qwidget-sample       ./occt-qwidget.png       5
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qopenglwidget-sample ./occt-qopenglwidget.png 5
+        xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qtquick-sample       ./occt-qtquick.png       5
+        popd
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: occt-qt6
-        path: ./build/*.png
-        
+        name: occt-qt6-linux
+        path: occt-samples-qt/*.png
+
