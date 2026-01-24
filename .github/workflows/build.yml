@@ -8,7 +8,5 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux-qt5:
-    uses: ./.github/workflows/build_linux_gcc_qt5.yml
-  linux-qt6:
-    uses: ./.github/workflows/build_linux_gcc_qt6.yml
+  linux:
+    uses: ./.github/workflows/build_linux.yml
