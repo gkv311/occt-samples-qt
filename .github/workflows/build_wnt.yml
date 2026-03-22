@@ -92,7 +92,7 @@ jobs:
         cp -f -r $msys_root/share/qt5/qml/QtQuick       $inst_bin/QtQuick
         cp -f -r $msys_root/share/qt5/qml/QtQuick.2     $inst_bin/QtQuick.2
     - name: Upload build
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: occt-qt5-mingw-ucrt64
         path: ${{ github.workspace }}/occt-samples-qt

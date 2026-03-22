@@ -44,7 +44,7 @@ jobs:
         xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qtquick-sample       ./occt-qtquick.png       5
         popd
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: occt-qt5-linux
         path: occt-samples-qt/*.png
@@ -90,7 +90,7 @@ jobs:
         xvfb-run --server-args="-screen 0 800x600x24" $screenshot_sh ./occt-qtquick-sample       ./occt-qtquick.png       5
         popd
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: occt-qt6-linux
         path: occt-samples-qt/*.png
