@@ -17,9 +17,9 @@
 #endif
 
 // Exporting this symbol from .exe with value=1 will direct to NVIDIA GPU on Optimus systems
-//__declspec(dllexport) DWORD NvOptimusEnablement = 1;
+//extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 1;
 // Exporting this symbol from .exe with value=1 will direct to faster GPU on AMD PowerXpress systems
-//__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+//extern "C" __declspec(dllexport) unsigned long AmdPowerXpressRequestHighPerformance = 1;
 
 //! OpenGL FBO subclass for wrapping FBO created by Qt using GL_RGBA8
 //! texture format instead of GL_SRGB8_ALPHA8.
