@@ -28,6 +28,10 @@ ApplicationWindow {
     Menu {
       title: qsTr("&File")
       MenuItem {
+        text: qsTr("&Dump image")
+        onTriggered: occt_view.screenshot();
+      }
+      MenuItem {
         text: qsTr("&Quit")
         onTriggered: Qt.quit();
       }

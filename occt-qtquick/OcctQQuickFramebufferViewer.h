@@ -62,9 +62,13 @@ public: // QML accessors
     update();
   }
 
+  //! Dump 3D view into image.
+  Q_INVOKABLE void screenshot();
+
 signals:
   void glInfoChanged();
   void glCriticalError(QString theMsg);
+  void glInfoMessage(QString theMsg);
 
 protected:
   //! OpenGL renderer interface.

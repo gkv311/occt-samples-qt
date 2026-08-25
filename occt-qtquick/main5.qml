@@ -1,6 +1,6 @@
 // sample for Qt5
 import QtQuick 2.7
-import QtQuick.Controls 2.2
+import QtQuick.Controls 2.2 // 2.3 for MenuBar
 import QtQuick.Dialogs 1.2
 
 import OcctQQuickFramebufferViewer 1.0
@@ -27,6 +27,10 @@ ApplicationWindow {
   /*MenuBar {
     Menu {
       title: qsTr("&File")
+      MenuItem {
+        text: qsTr("&Dump image")
+        onTriggered: occt_view.screenshot();
+      }
       MenuItem {
         text: qsTr("&Quit")
         onTriggered: Qt.quit();

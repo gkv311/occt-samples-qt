@@ -23,6 +23,9 @@ private:
   //! Define controls over 3D viewer.
   void createLayoutOverViewer();
 
+  //! Make a screenshot of 3D viewer.
+  void screenshot();
+
   //! Advanced method splitting 3D Viewer into sub-views.
   void splitSubviews();
 

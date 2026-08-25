@@ -4,10 +4,13 @@
 
 #include "OcctQOpenGLWidgetViewer.h"
 
+#include "../occt-qt-tools/OcctQtImage.h"
+
 #include <Standard_Version.hxx>
 
 #include <Standard_WarningsDisable.hxx>
 #include <QAction>
+#include <QDir>
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -47,6 +50,12 @@ void OcctQMainWindowSample::createMenuBar()
     connect(anActionSplit, &QAction::triggered, [this]() { splitSubviews(); });
   }
 #endif
+  {
+    QAction* anActionImage = new QAction(aMenuWindow);
+    anActionImage->setText("Dump image");
+    aMenuWindow->addAction(anActionImage);
+    connect(anActionImage, &QAction::triggered, [this]() { screenshot(); });
+  }
   {
     QAction* anActionQuit = new QAction(aMenuWindow);
     anActionQuit->setText("Quit");
@@ -119,6 +128,25 @@ void OcctQMainWindowSample::createLayoutOverViewer()
 
     aLayout->addWidget(aSliderBox);
   }
+}
+
+// ================================================================
+// Function : screenshot
+// ================================================================
+void OcctQMainWindowSample::screenshot()
+{
+  const QString aPath = QDir::currentPath() + "/screenshot.png";
+
+  int anImgDims[2] = {};
+  myViewer->View()->Window()->Size(anImgDims[0], anImgDims[1]);
+
+  OcctQtImage aPixmap;
+  if (!myViewer->View()->ToPixMap(aPixmap, anImgDims[0], anImgDims[1]))
+    QMessageBox::critical(0, "Screenshot info", QString("Unable to dump 3d view %1x%2").arg(anImgDims[0]).arg(anImgDims[1]));
+  else if (!aPixmap.Save(aPath.toUtf8().data()))
+    QMessageBox::critical(0, "Screenshot info", QString("Unable to save screenshot to\n'%1'").arg(aPath));
+  else
+    QMessageBox::information(0, "Screenshot info", QString("Screenshot %1x%2 saved to\n'%3'").arg(anImgDims[0]).arg(anImgDims[1]).arg(aPath));
 }
 
 // ================================================================

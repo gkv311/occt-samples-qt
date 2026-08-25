@@ -9,9 +9,11 @@
 #include "OcctQQuickFramebufferViewer.h"
 
 #include "../occt-qt-tools/OcctGlTools.h"
+#include "../occt-qt-tools/OcctQtImage.h"
 
 #include <Standard_WarningsDisable.hxx>
 #include <QApplication>
+#include <QDir>
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QOpenGLFramebufferObject>
@@ -86,6 +88,11 @@ OcctQQuickFramebufferViewer::OcctQQuickFramebufferViewer(QQuickItem* theParent)
   {
     QMessageBox::critical(0, "Critical error", theMsg);
     QApplication::exit(1);
+  }, Qt::QueuedConnection);
+
+  connect(this, &OcctQQuickFramebufferViewer::glInfoMessage, this, [this](QString theMsg)
+  {
+    QMessageBox::information(0, "Information", theMsg);
   }, Qt::QueuedConnection);
 }
 
@@ -523,4 +530,34 @@ void OcctQQuickFramebufferViewer::render(QOpenGLFramebufferObject* theFbo)
   if (aQWindow != nullptr)
     aQWindow->resetOpenGLState();
 #endif*/
+}
+
+// ================================================================
+// Function : screenshot
+// ================================================================
+void OcctQQuickFramebufferViewer::screenshot()
+{
+  const QQuickWindow* aQWindow = window();
+
+  QMetaObject::Connection* const aTmpConnect = new QMetaObject::Connection();
+  *aTmpConnect = connect(aQWindow, &QQuickWindow::beforeRendering, this, [this, aTmpConnect]()
+  {
+    const QString aPath = QDir::currentPath() + "/screenshot.png";
+
+    int anImgDims[2] = {};
+    myView->Window()->Size(anImgDims[0], anImgDims[1]);
+
+    OcctQtImage aPixmap;
+    if (!myView->ToPixMap(aPixmap, anImgDims[0], anImgDims[1]))
+      Q_EMIT glCriticalError(QString("Unable to dump 3d view %1x%2").arg(anImgDims[0]).arg(anImgDims[1]));
+    else if (!aPixmap.Save(aPath.toUtf8().data()))
+      Q_EMIT glCriticalError(QString("Unable to save screenshot to\n'%1'").arg(aPath));
+    else
+      Q_EMIT glInfoMessage(QString("Screenshot %1x%2 saved to\n'%3'").arg(anImgDims[0]).arg(anImgDims[1]).arg(aPath));
+
+    QObject::disconnect(*aTmpConnect);
+    delete aTmpConnect;
+  }, Qt::DirectConnection); // important to be called from rendering thread
+
+  update();
 }

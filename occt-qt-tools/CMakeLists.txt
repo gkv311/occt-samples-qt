@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 3.13)
 # dummy project - just to collect files in folder
 project (occt-qt-tools)
 add_custom_target (${PROJECT_NAME} SOURCES
+  OcctQtImage.h
+  OcctQtImage.cpp
   OcctQtTools.h
   OcctQtTools.cpp
   OcctGlTools.h

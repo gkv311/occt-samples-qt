@@ -81,6 +81,8 @@ set (OpenCASCADE_LIBS TKOpenGl TKV3d TKHLR TKMesh TKService TKShHealing TKPrim T
 
 # main project target
 add_executable (${PROJECT_NAME}
+  ../occt-qt-tools/OcctQtImage.h
+  ../occt-qt-tools/OcctQtImage.cpp
   ../occt-qt-tools/OcctQtTools.h
   ../occt-qt-tools/OcctQtTools.cpp
   ../occt-qt-tools/OcctGlTools.h
